@@ -37,17 +37,6 @@ impl Application
         }
     }
 
-    /*
-        Run empty application
-        This have to overriden in real applicatoin
-    */
-    pub fn run( &mut self )
-    -> &mut Self 
-    {
-        self
-    }
-
-
 
 
     /*
