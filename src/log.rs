@@ -361,7 +361,7 @@ impl Log
         {
             self.text(line).eol();
         }
-        self.end( "" );
+        self.end( "End of dump" );
         self
     }
 

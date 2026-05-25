@@ -2,6 +2,7 @@
     Works with moment
 */
 use std::time::{ SystemTime, UNIX_EPOCH };
+use chrono::{ DateTime };
 
 
 
@@ -203,18 +204,34 @@ impl Moment
 
 
 
-    pub fn to_string(&self) -> String 
+    /*
+        Convert moment to string with custom mask.
+        If mask is empty, uses default format: "%Y-%m-%d %H:%M:%S.%f"
+    */
+    pub fn format(&self, mask: &str) -> String
     {
-        let abs_micros = self.micros.abs() as u64;
-        let h = abs_micros / HOUR;
-        let m = (abs_micros % HOUR) / MINUTE;
-        let s = (abs_micros % MINUTE) / SECOND;
-        let us = abs_micros % SECOND;
+        let secs = self.micros / 1_000_000;
+        let nsecs = (self.micros % 1_000_000).abs() as u32 * 1000;
         
-        if self.micros < 0 {
-            format!("-{:02}:{:02}:{:02}.{:06}", h, m, s, us)
-        } else {
-            format!("{:02}:{:02}:{:02}.{:06}", h, m, s, us)
+        let datetime = DateTime::from_timestamp(secs, nsecs)
+            .unwrap_or_else(|| DateTime::from_timestamp(0, 0).unwrap());
+        
+        let effective_mask = if mask.is_empty() 
+        {
+            "%Y-%m-%d %H:%M:%S.%f"
         }
+        else
+        {
+            mask
+        };
+        
+        effective_mask
+        .replace("%Y", &datetime.format("%Y").to_string())
+        .replace("%m", &datetime.format("%m").to_string())
+        .replace("%d", &datetime.format("%d").to_string())
+        .replace("%H", &datetime.format("%H").to_string())
+        .replace("%M", &datetime.format("%M").to_string())
+        .replace("%S", &datetime.format("%S").to_string())
+        .replace("%f", &format!("{:06}", self.micros % 1_000_000))
     }
 }
