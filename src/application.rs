@@ -1,7 +1,7 @@
 use serde_yaml::Value;
+//use serde_json::json;
 use crate::state::State;
 use crate::log::Log;
-
 
 
 /* 
@@ -49,44 +49,61 @@ impl Application
     )
     -> &mut Self
     {
-        match std::fs::read_to_string(path)
-        {
-            Ok(content) =>
-            {
-                match serde_yaml::from_str(&content)
-                {
-                    Ok( config ) =>
-                    {
-                        self.config = Some(config);
+        use serde_json::json;
 
-                        /* Set log enabled */
-                        if let Some(enabled) = self.config.as_ref()
-                            .and_then(|c| c["application"]["log"]["enabled"].as_bool())
+        /* Check if config file exists */
+        if !std::path::Path::new(path).exists()
+        {
+            self.state.set_state
+            (
+                "config-not-found",
+                json!({ "file": path })
+            );
+        }
+        else
+        {
+            match std::fs::read_to_string( path )
+            {
+                Ok( content ) =>
+                {
+                    match serde_yaml::from_str( &content )
+                    {
+                        Ok( config ) =>
                         {
-                            self.log.set_enabled(enabled);
+                            self.config = Some( config );
+
+                            /* Set log enabled */
+                            if let Some( enabled ) = self.config.as_ref().and_then
+                            (
+                                |c| c["application"]["log"]["enabled"].as_bool()
+                            )
+                            {
+                                self.log.set_enabled( enabled );
+                            }
+                        }
+                        Err( e ) =>
+                        {
+                            self.state.set_state
+                            (
+                                "yaml-parse-error",
+                                json!({ "message": e.to_string(), "file": path })
+                            );
                         }
                     }
-                    Err(e) =>
-                    {
-                        self.log
-                        .error("YAML parse error")
-                        .prm("message", e)
-                        .eol();
-                    }
+                }
+                Err( e ) =>
+                {
+                    self.state.set_state
+                    (
+                        "cannot-read-config",
+                        json!({ "message": e.to_string(), "file": path })
+                    );
                 }
             }
-            Err(e) =>
-            {
-                self.log
-                .warning( "Cannot read config file" )
-                .prm( "message", e )
-                .prm("file", path)
-                .eol();
-            }
         }
+
         self
     }
-
 
 
     pub fn read_cli( &mut self ) 

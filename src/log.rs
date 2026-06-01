@@ -1,4 +1,5 @@
 use crate::colors::*;
+use crate::State;
 use crate::moment::Moment;
 use crate::files::{ expand_path, ensure_directory };
 use std::io::Write;
@@ -299,7 +300,8 @@ impl Log
     (
         &mut self,
         msg: &str
-    ) -> &mut Self
+    )
+    -> &mut Self
     {
         self.line_begin( Level::Error, msg );
         self
@@ -314,7 +316,8 @@ impl Log
     (
         &mut self,
         msg: &str
-    ) -> &mut Self
+    )
+    -> &mut Self
     {
         self.line_begin
         (
@@ -458,6 +461,21 @@ impl Log
     pub fn get_file_path(&self) -> &str
     {
         &self.file_path
+    }
+
+
+
+    pub fn dump_state
+    (
+        &mut self,
+        state: &State
+    )
+    -> &mut Self
+    {
+        self
+        .prm( "code", state.get_code() )
+        .prm( "details", &state.get_details().to_string() )
+        .eol()
     }
 }
 
