@@ -2,7 +2,7 @@ use serde_json::Value;
 
 
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive( Clone, serde::Serialize, serde::Deserialize )]
 
 
 

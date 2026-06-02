@@ -1,5 +1,4 @@
 use serde_yaml::Value;
-//use serde_json::json;
 use crate::state::State;
 use crate::log::Log;
 
@@ -7,14 +6,14 @@ use crate::log::Log;
 /* 
     Application structure
 */
-pub struct Application
+pub struct App
 {
     /* State of application */
     pub state: State,
     /* Log subsystem */
     log: Log,
     /* Config subsystem */
-    pub config: Option<serde_yaml::Value>,
+    pub config: serde_yaml::Value
 }
 
 
@@ -22,7 +21,7 @@ pub struct Application
 /*
     Application implementation
 */
-impl Application 
+impl App 
 {
     /*
         Create and return application
@@ -33,7 +32,7 @@ impl Application
         {
             state: State::ok(),
             log: Log::create(),
-            config: None,
+            config: serde_yaml::Value::Null,
         }
     }
 
@@ -70,13 +69,13 @@ impl Application
                     {
                         Ok( config ) =>
                         {
-                            self.config = Some( config );
+                            self.config = config;
 
                             /* Set log enabled */
-                            if let Some( enabled ) = self.config.as_ref().and_then
-                            (
-                                |c| c["application"]["log"]["enabled"].as_bool()
-                            )
+                            if let Some( enabled ) = self.config
+                            [ "application" ]
+                            [ "log" ]
+                            [ "enabled" ].as_bool()
                             {
                                 self.log.set_enabled( enabled );
                             }
@@ -160,21 +159,21 @@ impl Application
         }
 
 
-
-        match &mut self.config 
+        match &mut self.config
         {
-            Some(Value::Mapping(existing)) => 
+            Value::Mapping(existing) =>
             {
                 for (k, v) in map {
                     existing.insert(k, v);
                 }
             }
-            Some(_other) => 
+            Value::Null =>
+            {
+                self.config = Value::Mapping(map);
+            }
+            _other =>
             {
                 self.log.warning( "Cannot merge CLI into non-mapping config" );
-            }
-            None => {
-                self.config = Some(Value::Mapping(map));
             }
         }
 
@@ -186,29 +185,32 @@ impl Application
     /*
         Config dump
     */
-    pub fn dump_config(&mut self) 
+    pub fn dump_config( &mut self ) 
     -> &mut Self 
     {
-        if let Some(cfg) = &self.config {
-            self.log.begin("Config dump");
-            
-            if let Ok(yaml_str) = serde_yaml::to_string(cfg)
+        if !&self.config.is_null()
+        {
+            self.log.begin( "Config dump" );
+            match serde_yaml::to_string(&self.config)
             {
-                for line in yaml_str.lines()
+                Ok(yaml_str) =>
                 {
-                    self.log.trace(line);
+                    for line in yaml_str.lines()
+                    {
+                        self.log.trace(line);
+                    }
                 }
-            }
-            else
-            {
-                self.log.warning("Cannot serialize config to YAML");
-            }
-            
-            self.log.end("");
+                Err(e) =>
+                {
+                    self.log.warning( "Cannot serialize config to YAML" );
+                    self.log.prm( "error", &e.to_string() );
+                }
+            }           
+            self.log.end( "" );
         } 
         else 
         {
-            self.log.warning("No config loaded");
+            self.log.warning( "No config loaded" );
         }
         
         self
@@ -223,7 +225,18 @@ impl Application
     /*
         Return log
     */
-    pub fn get_log( &mut self ) 
+    pub fn get_log( &self ) 
+    -> &Log 
+    {
+        &self.log
+    }
+
+
+
+    /*
+        Return log
+    */
+    pub fn get_log_mut( &mut self ) 
     -> &mut Log 
     {
         &mut self.log
