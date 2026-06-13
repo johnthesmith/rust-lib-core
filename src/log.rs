@@ -137,24 +137,28 @@ impl Log
     }
 
 
+
     /*
         End of the line
         Send line buffer to the out
     */
-    pub fn eol(&mut self) 
+    pub fn eol( &mut self ) 
     -> &mut Self
     {
-        if self.enabled && !self.line.is_empty()
+        if self.enabled
         {
             match self.file_handle.is_some()
             {
-                true => {
-                    if let Some(f) = &mut self.file_handle {
+                true =>
+                {
+                    if let Some(f) = &mut self.file_handle
+                    {
                         let _ = f.write_all(self.line.as_bytes());
                         let _ = f.write_all(b"\n");
                     }
                 }
-                false => {
+                false =>
+                {
                     println!("{}", self.line);
                 }
             }
@@ -360,9 +364,9 @@ impl Log
     -> &mut Self 
     {
         self.begin( title ).eol();
-        for line in text.lines() 
+        for line in text.lines()
         {
-            self.text(line).eol();
+            self.text( line ).eol();
         }
         self.end( "End of dump" );
         self
