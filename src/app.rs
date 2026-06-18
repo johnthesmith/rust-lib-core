@@ -112,37 +112,49 @@ impl App
         let mut map = serde_yaml::Mapping::new();
 
         let mut i = 1;
-        while i < args.len() {
+        while i < args.len()
+        {
             let arg = &args[i];
 
-            if arg.starts_with("--")
+            if arg.starts_with( "--" )
             {
                 let parts: Vec<&str> = arg[2..].splitn(2, '=').collect();
                 let key = parts[0];
-                let value = if parts.len() > 1 {
+                let value = if parts.len() > 1
+                {
                     Value::String(parts[1].to_string())
                 } 
-                else if i + 1 < args.len() && !args[i + 1].starts_with('-')
+                else if i + 1 < args.len() && !args[i + 1].starts_with( '-' )
                 {
                     i += 1;
-                    Value::String(args[i].clone())
+                    Value::String( args[i].clone() )
                 }
                 else
                 {
                     Value::Bool( true )
                 };
-                map.insert( Value::String(key.to_string()), value);
+                map.insert( Value::String( key.to_string()), value );
             }
-            else if arg.starts_with('-') && arg != "-" 
+            else if arg.starts_with( "-" )
             {
-                let key = &arg[1..];
-                map.insert
-                (
-                    Value::String(key.to_string()), 
+                let parts: Vec<&str> = arg[ 1..].splitn( 2, '=' ).collect();
+                let key = parts[ 0 ];
+                let value = if parts.len() > 1
+                {
+                    Value::String( parts[1].to_string() )
+                } 
+                else if i + 1 < args.len() && !args[ i + 1 ].starts_with( '-' )
+                {
+                    i += 1;
+                    Value::String( args[ i ].clone() )
+                }
+                else
+                {
                     Value::Bool( true )
-                );
+                };
+                map.insert( Value::String( key.to_string()), value );
             }
-            else if !arg.starts_with('-') 
+            else 
             {
                 let pos = map.len();
                 map.insert

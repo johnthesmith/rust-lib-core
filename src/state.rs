@@ -6,7 +6,7 @@ use serde_json::Value;
 
 
 
-pub struct State 
+pub struct State
 {
     code: String,
     details: Value,
@@ -14,7 +14,7 @@ pub struct State
 
 
 
-impl State 
+impl State
 {
     const OK_CODE: &'static str = "OK";
 
@@ -23,9 +23,9 @@ impl State
     /*
         Create OK State
     */
-    pub fn ok() -> Self 
+    pub fn ok() -> Self
     {
-        Self 
+        Self
         {
             code: Self::OK_CODE.to_string(),
             details: Value::Null,
@@ -40,8 +40,8 @@ impl State
     pub fn is_ok
     (
         &self
-    ) 
-    -> bool 
+    )
+    -> bool
     {
         self.code == Self::OK_CODE
     }
@@ -58,8 +58,8 @@ impl State
         code: &str,
         /* State details */
         details: Value,
-    ) 
-    -> &mut Self 
+    )
+    -> &mut Self
     {
         self.code = code.to_string();
         self.details = details;
@@ -74,8 +74,8 @@ impl State
     pub fn get_code
     (
         &self
-    ) 
-    -> &str 
+    )
+    -> &str
     {
         &self.code
     }
@@ -88,8 +88,8 @@ impl State
     pub fn get_details
     (
         &self
-    ) 
-    -> &Value 
+    )
+    -> &Value
     {
         &self.details
     }
@@ -104,8 +104,8 @@ impl State
         &self,
         /* destination State */
         other: &mut State,
-    ) 
-    -> &Self 
+    )
+    -> &Self
     {
         other.code = self.code.clone();
         other.details = self.details.clone();
@@ -122,11 +122,33 @@ impl State
         &mut self,
         /* source State */
         other: &State,
-    ) 
-    -> &mut Self 
+    )
+    -> &mut Self
     {
         self.code = other.code.clone();
         self.details = other.details.clone();
+        self
+    }
+
+
+    /*
+        Dump state information in to stdout
+    */
+    pub fn dump( &self )
+    -> &Self
+    {
+        let state = serde_json::json!
+        (
+            {
+                "state":
+                {
+                    "code": self.code,
+                    "details": self.details.clone()
+                }
+            }
+        );
+
+        println!( "{}", state.to_string() );
         self
     }
 }
