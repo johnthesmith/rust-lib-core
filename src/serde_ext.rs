@@ -73,7 +73,19 @@ pub trait SerdeExt
         default: serde_json::Map<String, JsonValue>
     )
     -> serde_json::Map<String, JsonValue>;
+
+
+
+    fn merge
+    (
+        &self,
+        src: &serde_json::Value
+    )
+    -> serde_json::Value;
 }
+
+
+
 
 impl SerdeExt for YamlValue
 {
