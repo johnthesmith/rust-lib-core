@@ -152,7 +152,8 @@ impl SerdeExt for JsonValue
 
 
 
-    fn get_array( &self, default: Vec<JsonValue> ) -> Vec<JsonValue>
+    fn get_array( &self, default: Vec<JsonValue> )
+    -> Vec<JsonValue>
     {
         self.as_array().cloned().unwrap_or( default )
     }
@@ -161,11 +162,66 @@ impl SerdeExt for JsonValue
 
     fn get_object
     (
-        &self, 
+        &self,
         default: serde_json::Map<String, JsonValue>
     )
     -> serde_json::Map<String, JsonValue>
     {
         self.as_object().cloned().unwrap_or( default )
+    }
+
+
+
+    fn merge
+    (
+        &self,
+        src: &serde_json::Value
+    ) -> serde_json::Value
+    {
+        fn merge_internal
+        (
+            dst: &serde_json::Value,
+            src: &serde_json::Value
+        ) -> serde_json::Value
+        {
+            match (dst, src)
+            {
+                (
+                    serde_json::Value::Object(dst_obj),
+                    serde_json::Value::Object(src_obj)
+                ) =>
+                {
+                    let mut result = dst_obj.clone();
+                    for (k, v) in src_obj
+                    {
+                        match result.get_mut(k)
+                        {
+                            Some(dst_v) =>
+                            {
+                                let merged = merge_internal(dst_v, v);
+                                result.insert(k.clone(), merged);
+                            }
+                            None =>
+                            {
+                                result.insert(k.clone(), v.clone());
+                            }
+                        }
+                    }
+                    serde_json::Value::Object(result)
+                }
+                (
+                    serde_json::Value::Array(dst_arr),
+                    serde_json::Value::Array(src_arr)
+                ) =>
+                {
+                    let mut result = dst_arr.clone();
+                    result.extend(src_arr.clone());
+                    serde_json::Value::Array(result)
+                }
+                (_, _) => src.clone(),
+            }
+        }
+
+        merge_internal(self, src)
     }
 }
