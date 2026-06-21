@@ -4,7 +4,8 @@
 */
 
 use serde_json::Value as JsonValue;
-use serde_yaml::Value as YamlValue;
+
+
 
 pub trait SerdeExt
 {
@@ -75,61 +76,12 @@ pub trait SerdeExt
     -> serde_json::Map<String, JsonValue>;
 
 
-
     fn merge
     (
         &self,
-        src: &serde_json::Value
+        src: &Self
     )
-    -> serde_json::Value;
-}
-
-
-
-
-impl SerdeExt for YamlValue
-{
-    fn get_bool( &self, default: bool ) -> bool
-    {
-        self.as_bool().unwrap_or( default )
-    }
-
-    fn get_str( &self, default: &str ) -> String
-    {
-        self.as_str().unwrap_or( default ).to_string()
-    }
-
-    fn get_int( &self, default: u64 ) -> u64
-    {
-        self.as_u64().unwrap_or( default )
-    }
-
-    fn get_float( &self, default: f64 ) -> f64
-    {
-        self.as_f64().unwrap_or( default )
-    }
-
-    fn get_array( &self, default: Vec<JsonValue> ) -> Vec<JsonValue>
-    {
-        self.as_sequence()
-            .map(|s| s.iter().map(|v| serde_json::to_value(v).unwrap()).collect())
-            .unwrap_or( default )
-    }
-
-    fn get_object( &self, default: serde_json::Map<String, JsonValue> ) -> serde_json::Map<String, JsonValue>
-    {
-        self.as_mapping()
-            .map(|m| {
-                let mut map = serde_json::Map::new();
-                for (k, v) in m {
-                    if let Some(key) = k.as_str() {
-                        map.insert( key.to_string(), serde_json::to_value(v).unwrap() );
-                    }
-                }
-                map
-            })
-            .unwrap_or( default )
-    }
+    -> Self;
 }
 
 

@@ -1,9 +1,9 @@
-use serde_yaml::Value;
+use serde_json::{json};
 use crate::state::State;
 use crate::log::Log;
 
 
-/* 
+/*
     Application structure
 */
 pub struct App
@@ -13,7 +13,7 @@ pub struct App
     /* Log subsystem */
     log: Log,
     /* Config subsystem */
-    pub config: serde_yaml::Value
+    pub config: serde_json::Value
 }
 
 
@@ -21,18 +21,18 @@ pub struct App
 /*
     Application implementation
 */
-impl App 
+impl App
 {
     /*
         Create and return application
     */
-    pub fn create() -> Self 
+    pub fn create() -> Self
     {
-        Self 
+        Self
         {
             state: State::ok(),
             log: Log::create(),
-            config: serde_yaml::Value::Null,
+            config: serde_json::Value::Null
         }
     }
 
@@ -48,10 +48,8 @@ impl App
     )
     -> &mut Self
     {
-        use serde_json::json;
-
         /* Check if config file exists */
-        if !std::path::Path::new(path).exists()
+        if !std::path::Path::new( path ).exists()
         {
             self.state.set_state
             (
@@ -65,19 +63,33 @@ impl App
             {
                 Ok( content ) =>
                 {
-                    match serde_yaml::from_str( &content )
+                    match serde_yaml::from_str::<serde_yaml::Value>( &content )
                     {
-                        Ok( config ) =>
+                        Ok( yaml_config ) =>
                         {
-                            self.config = config;
-
-                            /* Set log enabled */
-                            if let Some( enabled ) = self.config
-                            [ "application" ]
-                            [ "log" ]
-                            [ "enabled" ].as_bool()
+                            match serde_json::to_value( &yaml_config )
                             {
-                                self.log.set_enabled( enabled );
+                                Ok( json_config ) =>
+                                {
+                                    self.config = json_config;
+
+                                    /* Set log enabled */
+                                    if let Some( enabled ) = self.config
+                                        [ "application" ]
+                                        [ "log" ]
+                                        [ "enabled" ].as_bool()
+                                    {
+                                        self.log.set_enabled( enabled );
+                                    }
+                                }
+                                Err( e ) =>
+                                {
+                                    self.state.set_state
+                                    (
+                                        "json-conversion-error",
+                                        json!({ "message": e.to_string(), "file": path })
+                                    );
+                                }
                             }
                         }
                         Err( e ) =>
@@ -105,11 +117,12 @@ impl App
     }
 
 
-    pub fn read_cli( &mut self ) 
-    -> &mut Self 
+
+    pub fn read_cli( &mut self )
+    -> &mut Self
     {
         let args: Vec<String> = std::env::args().collect();
-        let mut map = serde_yaml::Mapping::new();
+        let mut map = serde_json::Map::new();
 
         let mut i = 1;
         while i < args.len()
@@ -122,18 +135,18 @@ impl App
                 let key = parts[0];
                 let value = if parts.len() > 1
                 {
-                    Value::String(parts[1].to_string())
-                } 
+                    serde_json::Value::String(parts[1].to_string())
+                }
                 else if i + 1 < args.len() && !args[i + 1].starts_with( '-' )
                 {
                     i += 1;
-                    Value::String( args[i].clone() )
+                    serde_json::Value::String( args[i].clone() )
                 }
                 else
                 {
-                    Value::Bool( true )
+                    serde_json::Value::Bool( true )
                 };
-                map.insert( Value::String( key.to_string()), value );
+                map.insert( key.to_string(), value );
             }
             else if arg.starts_with( "-" )
             {
@@ -141,29 +154,26 @@ impl App
                 let key = parts[ 0 ];
                 let value = if parts.len() > 1
                 {
-                    Value::String( parts[1].to_string() )
-                } 
+                    serde_json::Value::String( parts[1].to_string() )
+                }
                 else if i + 1 < args.len() && !args[ i + 1 ].starts_with( '-' )
                 {
                     i += 1;
-                    Value::String( args[ i ].clone() )
+                    serde_json::Value::String( args[ i ].clone() )
                 }
                 else
                 {
-                    Value::Bool( true )
+                    serde_json::Value::Bool( true )
                 };
-                map.insert( Value::String( key.to_string()), value );
+                map.insert( key.to_string(), value );
             }
-            else 
+            else
             {
                 let pos = map.len();
                 map.insert
                 (
-                    Value::String
-                    (
-                        format!("_{}", pos)), 
-                        Value::String(arg.clone()
-                    )
+                    format!("_{}", pos),
+                    serde_json::Value::String( arg.clone() )
                 );
             }
 
@@ -173,15 +183,15 @@ impl App
 
         match &mut self.config
         {
-            Value::Mapping(existing) =>
+            serde_json::Value::Object(existing) =>
             {
                 for (k, v) in map {
                     existing.insert(k, v);
                 }
             }
-            Value::Null =>
+            serde_json::Value::Null =>
             {
-                self.config = Value::Mapping(map);
+                self.config = serde_json::Value::Object(map);
             }
             _other =>
             {
@@ -193,12 +203,11 @@ impl App
     }
 
 
-
     /*
         Config dump
     */
-    pub fn dump_config( &mut self ) 
-    -> &mut Self 
+    pub fn dump_config( &mut self )
+    -> &mut Self
     {
         if !&self.config.is_null()
         {
@@ -217,14 +226,14 @@ impl App
                     self.log.warning( "Cannot serialize config to YAML" );
                     self.log.prm( "error", &e.to_string() );
                 }
-            }           
+            }
             self.log.end( "" );
-        } 
-        else 
+        }
+        else
         {
             self.log.warning( "No config loaded" );
         }
-        
+
         self
     }
 
@@ -237,8 +246,8 @@ impl App
     /*
         Return log
     */
-    pub fn get_log( &self ) 
-    -> &Log 
+    pub fn get_log( &self )
+    -> &Log
     {
         &self.log
     }
@@ -248,8 +257,8 @@ impl App
     /*
         Return log
     */
-    pub fn get_log_mut( &mut self ) 
-    -> &mut Log 
+    pub fn get_log_mut( &mut self )
+    -> &mut Log
     {
         &mut self.log
     }
