@@ -51,6 +51,19 @@ impl State
     /*
         Set State with code and details
     */
+    pub fn set_ok( &mut self )
+    -> &mut Self
+    {
+        self.code = Self::OK_CODE.to_string();
+        self.details = Value::Null;
+        self
+    }
+
+
+
+    /*
+        Set State with code and details
+    */
     pub fn set_state
     (
         &mut self,

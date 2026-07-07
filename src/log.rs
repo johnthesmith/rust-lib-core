@@ -8,7 +8,7 @@ use std::io::Write;
 /*
     Type of messages
 */
-pub enum Level 
+pub enum Level
 {
     Info,
     Warning,

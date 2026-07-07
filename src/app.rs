@@ -1,6 +1,10 @@
 use serde_json::{json};
 use crate::state::State;
 use crate::log::Log;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::cell::RefMut;
+use std::cell::Ref;
 
 
 /*
@@ -11,7 +15,7 @@ pub struct App
     /* State of application */
     pub state: State,
     /* Log subsystem */
-    log: Log,
+    log: Rc<RefCell<Log>>,
     /* Config subsystem */
     pub config: serde_json::Value
 }
@@ -31,7 +35,7 @@ impl App
         Self
         {
             state: State::ok(),
-            log: Log::create(),
+            log: Rc::new(RefCell::new(Log::create())),
             config: serde_json::Value::Null
         }
     }
@@ -79,7 +83,7 @@ impl App
                                         [ "log" ]
                                         [ "enabled" ].as_bool()
                                     {
-                                        self.log.set_enabled( enabled );
+                                        self.get_log_mut().set_enabled( enabled );
                                     }
                                 }
                                 Err( e ) =>
@@ -195,7 +199,7 @@ impl App
             }
             _other =>
             {
-                self.log.warning( "Cannot merge CLI into non-mapping config" );
+                self.get_log_mut().warning( "Cannot merge CLI into non-mapping config" );
             }
         }
 
@@ -211,27 +215,27 @@ impl App
     {
         if !&self.config.is_null()
         {
-            self.log.begin( "Config dump" );
+            self.get_log_mut().begin( "Config dump" );
             match serde_yaml::to_string(&self.config)
             {
                 Ok(yaml_str) =>
                 {
                     for line in yaml_str.lines()
                     {
-                        self.log.trace(line);
+                        self.get_log_mut().trace(line);
                     }
                 }
                 Err(e) =>
                 {
-                    self.log.warning( "Cannot serialize config to YAML" );
-                    self.log.prm( "error", &e.to_string() );
+                    self.get_log_mut().warning( "Cannot serialize config to YAML" );
+                    self.get_log_mut().prm( "error", &e.to_string() );
                 }
             }
-            self.log.end( "" );
+            self.get_log_mut().end( "" );
         }
         else
         {
-            self.log.warning( "No config loaded" );
+            self.get_log_mut().warning( "No config loaded" );
         }
 
         self
@@ -243,24 +247,34 @@ impl App
         Setters and getteers
     */
 
+
+
     /*
-        Return log
+        Return shared reference to log
     */
-    pub fn get_log( &self )
-    -> &Log
+    pub fn get_log(&self)
+    -> Ref<'_, Log>
     {
-        &self.log
+        self.log.borrow()
     }
 
 
 
     /*
-        Return log
+        Return mutable reference to log (via RefCell)
     */
     pub fn get_log_mut( &mut self )
-    -> &mut Log
+    -> RefMut<'_, Log>
     {
-        &mut self.log
+        self.log.borrow_mut()
     }
 
+
+
+    pub fn get_log_rc(&self)
+    -> Rc<RefCell<Log>>
+    {
+        self.log.clone()
+    }
 }
+
