@@ -1,6 +1,7 @@
 use serde_json::{json};
 use crate::state::State;
 use crate::log::Log;
+use crate::SerdeExt;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::cell::RefMut;
@@ -120,6 +121,50 @@ impl App
         self
     }
 
+    /*
+        Return list of set names from config
+    */
+    pub fn get_sets( &mut self )
+    -> Vec<String>
+    {
+        let mut result = Vec::new();
+
+        if let Some(sets) = self.config
+        ["application"]
+        ["sets"]
+        .as_object()
+        {
+            for key in sets.keys()
+            {
+                result.push(key.to_string());
+            }
+        }
+
+        result
+    }
+
+
+
+    /*
+        Read sets from config and merge into config
+    */
+    pub fn read_sets( &mut self ) -> &mut Self
+    {
+        let set_name = self.config[ "set" ].get_str( "" );
+        if !set_name.is_empty()
+        {
+            if let Some( set ) = self.config
+            [ "application" ]
+            [ "sets" ]
+            [ set_name ].as_object()
+            {
+                let set_value = serde_json::Value::Object(set.clone());
+                self.config = self.config.merge( &set_value );
+            }
+        }
+        self
+    }
+
 
 
     pub fn read_cli( &mut self )
@@ -205,6 +250,7 @@ impl App
 
         self
     }
+
 
 
     /*

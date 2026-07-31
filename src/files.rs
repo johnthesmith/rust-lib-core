@@ -33,7 +33,7 @@ pub fn ensure_directory
 -> Result<(), String>
 {
     let expanded = expand_path(path);
-    
+
     // If path ends with '/', use it as directory, otherwise use parent
     let target = if expanded.ends_with('/')
     {
@@ -47,12 +47,12 @@ pub fn ensure_directory
             None => return Err("Invalid path: cannot extract parent directory".to_string()),
         }
     };
-    
+
     if let Err(e) = std::fs::create_dir_all(&target)
     {
         return Err(format!("Failed to create directory {}: {}", target, e));
     }
-    
+ 
     Ok(())
 }
 

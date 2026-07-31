@@ -100,4 +100,24 @@ impl Color
             Color::BgBrightWhite => "\x1b[107m",
         }
     }
+
+
+
+    pub fn colorize
+    (
+        start_color: Color,
+        text: &str,
+        end_color: Color,
+        use_colors: bool
+    ) -> String
+    {
+        if use_colors
+        {
+            format!("{}{}{}", start_color.to_str(), text, end_color.to_str())
+        } else {
+            text.to_string()
+        }
+    }
+
+
 }
