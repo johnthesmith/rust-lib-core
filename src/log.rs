@@ -350,18 +350,18 @@ impl Log
         );
 
         self
-    }  
+    }
 
 
 
 
     pub fn dump
     (
-        &mut self, 
-        title: &str, 
+        &mut self,
+        title: &str,
         text: &str
     )
-    -> &mut Self 
+    -> &mut Self
     {
         self.begin( title ).eol();
         for line in text.lines()
@@ -424,12 +424,12 @@ impl Log
     */
     pub fn set_file_path
     (
-        &mut self, 
+        &mut self,
         path: &str
-    ) 
-    -> &mut Self 
+    )
+    -> &mut Self
     {
-        if path.is_empty() 
+        if path.is_empty()
         {
             /* Закрываем дескриптор */
             self.file_handle = None;
@@ -439,7 +439,7 @@ impl Log
         {
             self.file_path = expand_path( path );
 
-            if let Err(e) = ensure_directory(&self.file_path) 
+            if let Err(e) = ensure_directory(&self.file_path)
             {
                 self.file_handle = None;
                 eprintln!( "{}", e );
@@ -453,7 +453,7 @@ impl Log
                 .ok();
             }
         }
-        
+
         self
     }
 

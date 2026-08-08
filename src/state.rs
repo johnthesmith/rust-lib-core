@@ -145,23 +145,70 @@ impl State
 
 
     /*
-        Dump state information in to stdout
+        Dump state information to stdout
     */
-    pub fn dump( &self )
+    pub fn dump
+    (
+        &self,
+        format: &str,
+        colorize: bool
+    )
     -> &Self
     {
-        let state = serde_json::json!
-        (
+        match format
+        {
+            "json" =>
             {
-                "state":
+                let state = serde_json::json!
+                (
+                    {
+                        "state":
+                        {
+                            "code": self.code,
+                            "details": self.details.clone()
+                        }
+                    }
+                );
+                println!("{}", state.to_string());
+            }
+
+            "txt" | _ =>
+            {
+                let code_str = if self.code == Self::OK_CODE
                 {
-                    "code": self.code,
-                    "details": self.details.clone()
+                    if colorize
+                    {
+                        format!("\x1b[32m{}\x1b[0m", Self::OK_CODE)
+                    }
+                    else
+                    {
+                        format!("{}", self.code)
+                    }
+                }
+                else
+                {
+                    if colorize
+                    {
+                        format!("\x1b[31m{}\x1b[0m", self.code)
+                    }
+                    else
+                    {
+                        format!("{}", self.code)
+                    }
+                };
+                println!( "{}", code_str );
+
+                if let Some(obj) = self.details.as_object()
+                {
+                    for (key, value) in obj
+                    {
+                        println!("{} {}", key, value);
+                    }
                 }
             }
-        );
+        }
 
-        println!( "{}", state.to_string() );
         self
     }
+
 }

@@ -96,6 +96,20 @@ pub trait SerdeExt
 
 
     /*
+        Get string list value
+        Returns list of strings from array or single-element list from string
+    */
+    fn get_string_list
+    (
+        &self,
+        /* Default value if not a string or array */
+        default: Vec<String>
+    )
+    -> Vec<String>;
+
+
+
+    /*
         Get object value
     */
     fn get_object
@@ -255,6 +269,31 @@ impl SerdeExt for JsonValue
     -> Vec<JsonValue>
     {
         self.as_array().cloned().unwrap_or( default )
+    }
+
+
+
+    fn get_string_list
+    (
+        &self,
+        default: Vec<String>
+    ) -> Vec<String>
+    {
+        match self
+        {
+            JsonValue::Array( arr ) =>
+            {
+                arr.iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .collect()
+            }
+            JsonValue::String( s ) =>
+            {
+                vec![s.clone()]
+            }
+            _ => default,
+        }
     }
 
 

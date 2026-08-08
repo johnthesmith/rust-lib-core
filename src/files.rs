@@ -1,21 +1,25 @@
+use std::path::{ Path };
+
+
+
 /*
     Conver ~ path in to home path
 */
 pub fn expand_path
 (
     path: &str
-) 
--> String 
+)
+-> String
 {
-    if path.starts_with("~/") 
+    if path.starts_with("~/")
     {
         format!("{}/{}", std::env::var("HOME").unwrap_or_default(), &path[2..])
-    } 
+    }
     else if path.starts_with('~')
     {
         format!("{}/{}", std::env::var("HOME").unwrap_or_default(), &path[1..])
-    } 
-    else 
+    }
+    else
     {
         path.to_string()
     }
@@ -44,7 +48,10 @@ pub fn ensure_directory
         match std::path::Path::new(&expanded).parent()
         {
             Some(parent) => parent.to_str().unwrap_or("").to_string(),
-            None => return Err("Invalid path: cannot extract parent directory".to_string()),
+            None => return Err
+            (
+                "Invalid path: cannot extract parent directory".to_string()
+            ),
         }
     };
 
@@ -52,19 +59,24 @@ pub fn ensure_directory
     {
         return Err(format!("Failed to create directory {}: {}", target, e));
     }
- 
+
     Ok(())
 }
 
 
 
-pub fn extract_path( full_path: &str)
+pub fn extract_path( full_path: &str )
 -> String
 {
     std::path::Path::new(full_path)
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new(""))
-        .to_str()
-        .unwrap_or("")
-        .to_string()
+    .parent()
+    .unwrap_or_else(|| std::path::Path::new(""))
+    .to_str()
+    .unwrap_or("")
+    .to_string()
 }
+
+
+
+include!( "files/get_full_path.rs" );
+include!( "files/get_abs_path.rs" );

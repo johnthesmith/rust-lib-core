@@ -121,10 +121,12 @@ impl App
         self
     }
 
+
+
     /*
         Return list of set names from config
     */
-    pub fn get_sets( &mut self )
+    pub fn get_sets( &self )
     -> Vec<String>
     {
         let mut result = Vec::new();
@@ -178,7 +180,7 @@ impl App
         {
             let arg = &args[i];
 
-            if arg.starts_with( "--" )
+            if arg.starts_with("--")
             {
                 let parts: Vec<&str> = arg[2..].splitn(2, '=').collect();
                 let key = parts[0];
@@ -186,70 +188,102 @@ impl App
                 {
                     serde_json::Value::String(parts[1].to_string())
                 }
-                else if i + 1 < args.len() && !args[i + 1].starts_with( '-' )
+                else if i + 1 < args.len() && !args[i + 1].starts_with('-')
                 {
                     i += 1;
-                    serde_json::Value::String( args[i].clone() )
+                    serde_json::Value::String(args[i].clone())
                 }
                 else
                 {
-                    serde_json::Value::Bool( true )
+                    serde_json::Value::Bool(true)
                 };
-                map.insert( key.to_string(), value );
+                self.insert_cli_value(&mut map, key, value);
             }
             else if arg.starts_with( "-" )
             {
-                let parts: Vec<&str> = arg[ 1..].splitn( 2, '=' ).collect();
-                let key = parts[ 0 ];
-                let value = if parts.len() > 1
-                {
-                    serde_json::Value::String( parts[1].to_string() )
+                let parts: Vec<&str> = arg[1..].splitn(2, '=').collect();
+                let key = parts[0];
+                let value = if parts.len() > 1 {
+                    serde_json::Value::String(parts[1].to_string())
                 }
-                else if i + 1 < args.len() && !args[ i + 1 ].starts_with( '-' )
+                else if i + 1 < args.len() && !args[i + 1].starts_with('-')
                 {
                     i += 1;
-                    serde_json::Value::String( args[ i ].clone() )
+                    serde_json::Value::String(args[i].clone())
                 }
                 else
                 {
                     serde_json::Value::Bool( true )
                 };
-                map.insert( key.to_string(), value );
+                self.insert_cli_value( &mut map, key, value );
             }
             else
             {
                 let pos = map.len();
                 map.insert
                 (
-                    format!("_{}", pos),
-                    serde_json::Value::String( arg.clone() )
+                    format!( "_{}", pos ),
+                    serde_json::Value::String(arg.clone())
                 );
             }
-
             i += 1;
         }
-
 
         match &mut self.config
         {
             serde_json::Value::Object(existing) =>
             {
-                for (k, v) in map {
+                for (k, v) in map
+                {
                     existing.insert(k, v);
                 }
             }
-            serde_json::Value::Null =>
-            {
+            serde_json::Value::Null => {
                 self.config = serde_json::Value::Object(map);
             }
             _other =>
             {
-                self.get_log_mut().warning( "Cannot merge CLI into non-mapping config" );
+                self.get_log_mut().warning
+                (
+                    "Cannot merge CLI into non-mapping config"
+                );
             }
         }
 
         self
     }
+
+
+
+    fn insert_cli_value
+    (
+        &self,
+        map: &mut serde_json::Map<String, serde_json::Value>,
+        key: &str,
+        value: serde_json::Value,
+    ) {
+        if let Some(existing) = map.get(key)
+        {
+            if let Some(arr) = existing.as_array()
+            {
+                let mut new_arr = arr.clone();
+                new_arr.push(value);
+                map.insert(key.to_string(), serde_json::Value::Array(new_arr));
+            }
+            else
+            {
+                let mut arr = Vec::new();
+                arr.push(existing.clone());
+                arr.push(value);
+                map.insert(key.to_string(), serde_json::Value::Array(arr));
+            }
+        }
+        else
+        {
+            map.insert(key.to_string(), value);
+        }
+    }
+
 
 
 
