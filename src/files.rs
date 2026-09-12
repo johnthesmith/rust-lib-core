@@ -80,3 +80,4 @@ pub fn extract_path( full_path: &str )
 
 include!( "files/get_full_path.rs" );
 include!( "files/get_abs_path.rs" );
+include!( "files/scan.rs" );

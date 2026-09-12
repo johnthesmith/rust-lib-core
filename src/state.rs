@@ -211,4 +211,34 @@ impl State
         self
     }
 
+
+
+    /*
+        Add fields in to details
+    */
+    pub fn add_details
+    (
+        &mut self,
+        details: Value,
+    )
+    -> &mut Self
+    {
+        if !self.details.is_object()
+        {
+            self.details = Value::Object(serde_json::Map::new());
+        }
+
+        if let Some(source) = details.as_object()
+        {
+            if let Some(target) = self.details.as_object_mut()
+            {
+                for (key, value) in source
+                {
+                    target.insert(key.clone(), value.clone());
+                }
+            }
+        }
+
+        self
+    }
 }

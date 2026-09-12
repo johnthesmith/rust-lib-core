@@ -4,6 +4,8 @@
 */
 
 use serde_json::Value as JsonValue;
+use crate::path::Path;
+
 
 
 pub trait SerdeExt
@@ -122,6 +124,15 @@ pub trait SerdeExt
 
 
 
+    fn add
+    (
+        &self,
+        src: &Self
+    )
+    -> Self;
+
+
+
     fn merge
     (
         &self,
@@ -164,7 +175,35 @@ pub trait SerdeExt
         default: u64
     )
     -> u64;
+
+
+    /*
+        Get string list value by path
+        Path is a json array of string keys or numeric indexes
+        Returns list of strings from array or single-element list from string
+        If path does not resolve or is not a string/array, returns default
+    */
+    fn get_by_path_string_list
+    (
+        &self,
+        /* Path as array of string keys or numeric indexes */
+        path: &JsonValue,
+        /* Default value if the path does not resolve or is not a string/array */
+        default: Vec<String>
+    )
+    -> Vec<String>;
+
+
+
+    fn get_value_by_path
+    (
+        &self,
+        path: &Path
+    )
+    -> Option<JsonValue>;
 }
+
+
 
 
 
@@ -310,6 +349,41 @@ impl SerdeExt for JsonValue
 
 
 
+    fn add
+    (
+        &self,
+        src: &serde_json::Value
+    ) -> serde_json::Value
+    {
+        match (self, src)
+        {
+            (
+                serde_json::Value::Object(dst_obj),
+                serde_json::Value::Object(src_obj)
+            ) =>
+            {
+                let mut result = dst_obj.clone();
+                for (key, value) in src_obj
+                {
+                    if let Some(existing) = result.get_mut(key)
+                    {
+                        // Если ключ уже есть — рекурсивно мерджим
+                        let merged = existing.add(value);
+                        result.insert(key.clone(), merged);
+                    }
+                    else
+                    {
+                        result.insert(key.clone(), value.clone());
+                    }
+                }
+                serde_json::Value::Object(result)
+            }
+            _ => self.clone()
+        }
+    }
+
+
+
     fn merge
     (
         &self,
@@ -361,6 +435,43 @@ impl SerdeExt for JsonValue
         }
 
         merge_internal(self, src)
+    }
+
+
+
+    fn get_by_path_string_list
+    (
+        &self,
+        path: &JsonValue,
+        default: Vec<String>
+    ) -> Vec<String>
+    {
+        let mut current = self;
+        if let Some(arr) = path.as_array()
+        {
+            for key in arr
+            {
+                let next = if let Some(idx) = key.as_u64()
+                {
+                    current.as_array().and_then(|a| a.get(idx as usize))
+                }
+                else if let Some(key_str) = key.as_str()
+                {
+                    current.as_object().and_then(|o| o.get(key_str))
+                }
+                else
+                {
+                    None
+                };
+
+                match next
+                {
+                    Some(v) => current = v,
+                    None => return default,
+                }
+            }
+        }
+        current.get_string_list(default)
     }
 
 
@@ -437,6 +548,35 @@ impl SerdeExt for JsonValue
             }
         }
         current.get_int( default )
+    }
+
+
+
+    fn get_value_by_path
+    (
+        &self,
+        path: &Path
+    )
+    -> Option <JsonValue>
+    {
+        let mut current = self.clone();
+
+        for key in &path.keys
+        {
+            match current.get( key )
+            {
+                Some( value ) =>
+                {
+                    current = value.clone();
+                }
+                None =>
+                {
+                    return None;
+                }
+            }
+        }
+
+        Some( current )
     }
 
 }
